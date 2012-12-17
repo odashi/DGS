@@ -54,7 +54,7 @@ bool DGS::Joypad::getDevice()
 		return false;
 
 	// データフォーマットの設定
-	HRESULT hr = dev_->SetDataFormat(&c_dfDIJoystick2);
+	::HRESULT hr = dev_->SetDataFormat(&c_dfDIJoystick2);
 	if (FAILED(hr))
 		goto ERR;
 
@@ -64,7 +64,7 @@ bool DGS::Joypad::getDevice()
 		goto ERR;
 
 	// 各軸の設定
-	DIPROPRANGE dipr;
+	::DIPROPRANGE dipr;
 	dipr.diph.dwSize = sizeof(dipr);
 	dipr.diph.dwHeaderSize = sizeof(dipr.diph);
 	dipr.diph.dwHow = DIPH_BYOFFSET;
