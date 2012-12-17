@@ -50,6 +50,9 @@
     <ClCompile Include="Thread.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Context.h">
@@ -89,6 +92,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="Thread.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

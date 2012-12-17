@@ -22,6 +22,7 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Thread.cpp" />
+    <ClCompile Include="Timer.cpp" />
     <ClCompile Include="utility.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
@@ -37,6 +38,7 @@
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Thread.h" />
+    <ClInclude Include="Timer.h" />
     <ClInclude Include="utility.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>

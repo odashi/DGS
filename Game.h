@@ -11,8 +11,9 @@ namespace DGS {
 		::HINSTANCE hinst_;
 		std::string identifier_;
 		unsigned int frame_rate_;
-		unsigned long long int elapsed_;
-		unsigned long long int old_time_;
+		unsigned long long elapsed_;
+		unsigned long long old_time_;
+		unsigned long long freq_;
 	public:
 		// 現在のオブジェクトを返す
 		// なければ例外を投げる

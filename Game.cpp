@@ -47,6 +47,9 @@ DGS::Game::Game(::HINSTANCE hinst, const std::string& identifier, unsigned int f
 	if (identifier == "")
 		throw Exception("このゲーム識別子は使用できません。");
 
+	// パフォーマンスカウンタの周波数
+	::QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER *>(&freq_));
+
 	s_current_object_ = this;
 }
 
@@ -59,9 +62,9 @@ DGS::Game::~Game()
 // 待機
 bool DGS::Game::wait()
 {
-	unsigned long long int freq, new_time;
+	unsigned long long new_time;
 	MSG msg;
-	
+
 	do {
 		// メッセージ処理
 		while (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -73,15 +76,14 @@ bool DGS::Game::wait()
 		}
 		
 		// フレーム同期待ち
-		::QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER *>(&freq));
 		::QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER *>(&new_time));
 		elapsed_ += frame_rate_ * (new_time - old_time_);
 		old_time_ = new_time;
 
-	} while (elapsed_ < freq);
+	} while (elapsed_ < freq_);
 	
 	// 誤差を次の更新に残す
-	elapsed_ %= freq;
+	elapsed_ %= freq_;
 	
 	return true;
 }
