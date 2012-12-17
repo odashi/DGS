@@ -1,0 +1,8 @@
+DGS
+My Game SDK for C++
+
+This library requires:
+	DirectX SDK (June 2010)
+
+This library is aiming to Microsoft Visual C++ 2010.
+
