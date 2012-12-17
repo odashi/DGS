@@ -10,12 +10,12 @@
 // c-tor
 DGS::Stopwatch::Stopwatch()
 {
-	start();
-
 	// パフォーマンスカウンタの周波数
 	unsigned long long f;
 	::QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER *>(&f));
 	freq_ = static_cast<float>(f);
+
+	start();
 }
 
 // 現在時刻を基準時刻に設定
