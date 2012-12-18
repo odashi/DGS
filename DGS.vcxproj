@@ -15,9 +15,7 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="Hook.cpp" />
-    <ClCompile Include="Joypad.cpp" />
-    <ClCompile Include="Keyboard.cpp" />
-    <ClCompile Include="Mouse.cpp" />
+    <ClCompile Include="Input.cpp" />
     <ClCompile Include="Mutex.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
@@ -31,9 +29,8 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Hook.h" />
-    <ClInclude Include="Joypad.h" />
-    <ClInclude Include="Keyboard.h" />
-    <ClInclude Include="Mouse.h" />
+    <ClInclude Include="InputBinder.h" />
+    <ClInclude Include="Input.h" />
     <ClInclude Include="Mutex.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Texture.h" />
