@@ -11,6 +11,7 @@ namespace DGS {
 		static unsigned int s_object_num_;
 		::HWND hwnd_;
 		std::string title_;
+		bool lb_down_, rb_down_, mb_down_;
 
 		// ウィンドウクラスの登録
 		bool registerWindowClass();
@@ -49,5 +50,10 @@ namespace DGS {
 
 		// ウィンドウ全体のサイズを設定する
 		void setWindowSize(unsigned int width, unsigned int height);
+
+		// マウスボタンが押されているかどうかの確認
+		bool mouseDownL() { return lb_down_; }
+		bool mouseDownR() { return rb_down_; }
+		bool mouseDownM() { return mb_down_; }
 	};
 }

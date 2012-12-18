@@ -60,6 +60,12 @@ LRESULT CALLBACK DGS::Window::windowProc(HWND hwnd, UINT message, WPARAM wp, LPA
 			::RemovePropA(hwnd, PROP_NAME);
 			return -1;
 		}
+
+		// マウスボタンの押下判定を初期化
+		Window* window = reinterpret_cast<Window*>(cs->lpCreateParams);
+		window->lb_down_ = false;
+		window->rb_down_ = false;
+		window->mb_down_ = false;
 		return 0;
 	}
 	
@@ -98,17 +104,31 @@ LRESULT CALLBACK DGS::Window::windowProc(HWND hwnd, UINT message, WPARAM wp, LPA
 		::PostQuitMessage(0);
 		break;
 
+		// マウスボタンが押されたときの処理
 	case WM_LBUTTONDOWN:
+		window->lb_down_ = true;
+		::SetCapture(hwnd);
+		break;
 	case WM_RBUTTONDOWN:
+		window->rb_down_ = true;
+		::SetCapture(hwnd);
+		break;
 	case WM_MBUTTONDOWN:
-		// マウスキャプチャの開始
+		window->mb_down_ = true;
 		::SetCapture(hwnd);
 		break;
 
+		// マウスボタンが離されたときの処理
 	case WM_LBUTTONUP:
+		window->lb_down_ = false;
+		::ReleaseCapture();
+		break;
 	case WM_RBUTTONUP:
+		window->rb_down_ = false;
+		::ReleaseCapture();
+		break;
 	case WM_MBUTTONUP:
-		// マウスキャプチャの終了
+		window->mb_down_ = false;
 		::ReleaseCapture();
 		break;
 

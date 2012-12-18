@@ -18,10 +18,10 @@ namespace DGS {
 
 	// É}ÉEÉXÇÃä«óù
 	class Mouse : private Uncopyable {
-		HWND hwnd_;
+		Window& window_;
 		POINT p_;
-		short lb_, rb_, mb_;
-		short old_lb_, old_rb_, old_mb_;
+		bool lb_, rb_, mb_;
+		bool old_lb_, old_rb_, old_mb_;
 	public:
 		Mouse(Window& window);
 		~Mouse() {}
