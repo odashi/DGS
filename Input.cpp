@@ -1,12 +1,12 @@
 // Input.cpp
 #include "Input.h"
 
+#include <cassert>
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
 #include "Game.h"
-
 
 
 /* class DGS::Mouse */
@@ -271,9 +271,6 @@ bool DGS::Keyboard::released(const std::string& key) const
 /* class DGS::Joypad */
 
 namespace {
-	// デバイスの取得間隔
-	unsigned int DEVICE_RETRIEVE_INTERVAL = 4;
-
 	// ボタンの最大数
 	unsigned int BUTTON_NUM_MAX = 64;
 }
@@ -283,6 +280,29 @@ namespace {
 
 // 既に取得済みのデバイスの GUID
 std::list<GUID> DGS::Joypad::s_guids_;
+
+// クリティカルセクション
+DGS::CriticalSection DGS::Joypad::s_cs_;
+
+// ジョイパッドの取得を行うスレッド
+unsigned int DGS::Joypad::joypadThread(void* data)
+{
+	Joypad* joypad = static_cast<Joypad*>(data);
+
+	while (joypad->continue_thread_) {
+		// デバイスがなければ取得を試みる
+		if (!joypad->enabled_) {
+			s_cs_.enter();
+			joypad->getDevice();
+			s_cs_.leave();
+		}
+
+		// 待機
+		Thread::sleep(1000);
+	}
+
+	return 0;
+}
 
 // ジョイパッドの列挙
 BOOL CALLBACK DGS::Joypad::joypadEnum(const DIDEVICEINSTANCE* ddi, void* ref)
@@ -312,12 +332,14 @@ BOOL CALLBACK DGS::Joypad::joypadEnum(const DIDEVICEINSTANCE* ddi, void* ref)
 }
 
 // デバイスの取得
-bool DGS::Joypad::getDevice()
+void DGS::Joypad::getDevice()
 {
+	assert(!enabled_);
+
 	// デバイスを列挙して取得
 	s_di_->EnumDevices(DI8DEVCLASS_GAMECTRL, joypadEnum, static_cast<void *>(this), DIEDFL_ATTACHEDONLY);
 	if (!dev_.p)
-		return false;
+		return;
 
 	// データフォーマットの設定
 	::HRESULT hr = dev_->SetDataFormat(&c_dfDIJoystick2);
@@ -352,12 +374,13 @@ bool DGS::Joypad::getDevice()
 	if (FAILED(hr))
 		goto ERR;
 
-	return true;
+	enabled_ = true;
+	return;
 
 	// エラー処理
 ERR:
 	dev_.Release();
-	return false;
+	return;
 }
 
 // デバイスの破棄
@@ -368,10 +391,14 @@ void DGS::Joypad::destroyDevice()
 		dev_.Release();
 
 		// 登録していた GUID の削除
+		s_cs_.enter();
 		auto it = s_guids_.begin();
 		while (*it != guid_)
 			++it;
 		s_guids_.erase(it);
+		s_cs_.leave();
+
+		enabled_ = false;
 	}
 }
 
@@ -380,7 +407,9 @@ DGS::Joypad::Joypad(Window& window, long min_value, long max_value)
 	: hwnd_(window.rawHandle())
 	, min_value_(min_value)
 	, max_value_(max_value)
-	, frame_(0)
+	, th_(joypadThread, this, false)
+	, continue_thread_(true)
+	, enabled_(false)
 {
 	// DirectInput オブジェクトの生成
 	if (!s_di_.p) {
@@ -396,47 +425,39 @@ DGS::Joypad::Joypad(Window& window, long min_value, long max_value)
 		s_di_.Attach(di);
 	}
 
-	getDevice();
+	// デバイス取得スレッドの起動
+	th_.resume();
 }
 
 // d-tor
 DGS::Joypad::~Joypad()
 {
+	// デバイス取得スレッドの停止
+	continue_thread_ = false;
+	th_.join();
+
+	// デバイスの破棄
 	destroyDevice();
 }
 
 // 情報の更新
 void DGS::Joypad::update()
 {
-	// 今回の更新でデバイスの再取得を試すかどうか
-	bool reset = (frame_ % (Game::getCurrentObject().frameRate() * DEVICE_RETRIEVE_INTERVAL) == 0);
-
-	++frame_;
-
 	// 前の情報をコピー
 	old_state_ = state_;
 
-	bool enabled;
-	if (dev_.p) {
+	if (enabled_) {
 		// 現在の情報を取得
-		enabled = true;
 		::HRESULT hr = dev_->Poll();
 		if (FAILED(hr)) {
 			// おそらくデバイスロスト
 			// 取得待機にする
 			destroyDevice();
-			enabled = false;
 		}
-	} else {
-		// デバイスの再取得を試す
-		if (reset)
-			enabled = getDevice();
-		else
-			enabled = false;
 	}
 
 	// 情報の更新
-	if (enabled)
+	if (enabled_)
 		dev_->GetDeviceState(sizeof(state_), &state_);
 	else
 		std::memset(&state_, 0, sizeof(state_));

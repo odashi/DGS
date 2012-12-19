@@ -13,7 +13,8 @@
 #include <windows.h>
 #include <dinput.h>
 #include <atlbase.h>
-#include "window.h"
+#include "Window.h"
+#include "Thread.h"
 #include "utility.h"
 
 namespace DGS {
@@ -87,17 +88,23 @@ namespace DGS {
 	class Joypad : public Input {
 		static ::CComPtr<::IDirectInput8A> s_di_;
 		static std::list<GUID> s_guids_;
+		static CriticalSection s_cs_;
 
 		HWND hwnd_;
 		long min_value_, max_value_;
 		::CComPtr<::IDirectInputDevice8> dev_;
 		GUID guid_;
 		DIJOYSTATE2 state_, old_state_;
-		unsigned int frame_;
+
+		Thread th_;
+		bool continue_thread_;
+		bool enabled_;
+
+		static unsigned int joypadThread(void* data);
 
 		static BOOL CALLBACK joypadEnum(const DIDEVICEINSTANCE* ddi, void* ref);
 
-		bool getDevice();
+		void getDevice();
 		void destroyDevice();
 
 	public:

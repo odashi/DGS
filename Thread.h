@@ -19,7 +19,10 @@ namespace DGS {
 		static unsigned int CALLBACK callback(void* data);
 
 	public:
-		Thread(ThreadFunc func, void* data);
+		// スレッドの休止
+		static void sleep(unsigned int msec);
+
+		Thread(ThreadFunc func, void* data, bool run_immediately = true);
 		~Thread();
 
 		// スレッドの再開
@@ -36,6 +39,8 @@ namespace DGS {
 
 		// スレッドの戻り値を取得
 		unsigned int exitCode();
+
+		::HANDLE rawHandle() { return th_; }
 	};
 
 	// クリティカルセクション

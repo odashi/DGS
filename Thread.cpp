@@ -29,12 +29,24 @@ unsigned int CALLBACK DGS::Thread::callback(void* data)
 	return ret;
 }
 
+// スレッドの休止
+void DGS::Thread::sleep(unsigned int msec)
+{
+	::Sleep(msec);
+}
+
 // c-tor
-DGS::Thread::Thread(ThreadFunc func, void* data)
+DGS::Thread::Thread(ThreadFunc func, void* data, bool run_immediately)
 	: func_(func)
 	, data_(data)
 {
-	th_ = reinterpret_cast<::HANDLE>(::_beginthreadex(nullptr, 0, callback, this, 0, nullptr));
+	th_ = reinterpret_cast<::HANDLE>(::_beginthreadex(
+		nullptr,
+		0,
+		callback,
+		this,
+		run_immediately ? 0 : CREATE_SUSPENDED,
+		nullptr));
 	if (!th_)
 		throw Win32Exception();
 }
@@ -49,7 +61,7 @@ DGS::Thread::~Thread()
 // スレッドの再開
 void DGS::Thread::resume()
 {
-	while (::ResumeThread(th_) > 0);
+	while (::ResumeThread(th_) > 1);
 }
 
 // スレッドの停止
