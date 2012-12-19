@@ -3,6 +3,10 @@
 
 #include <process.h>
 
+
+
+/* class DGS::Thread */
+
 // スレッドプロシージャ
 unsigned int CALLBACK DGS::Thread::callback(void* data)
 {
@@ -73,4 +77,32 @@ unsigned int DGS::Thread::exitCode()
 	DWORD code;
 	::GetExitCodeThread(th_, &code);
 	return static_cast<unsigned int>(code);
+}
+
+
+
+/* class DGS::CriticalSection */
+
+// c-tor
+DGS::CriticalSection::CriticalSection()
+{
+	::InitializeCriticalSection(&cs_);
+}
+
+// d-tor
+DGS::CriticalSection::~CriticalSection()
+{
+	::DeleteCriticalSection(&cs_);
+}
+
+// 権限を取得
+void DGS::CriticalSection::enter()
+{
+	::EnterCriticalSection(&cs_);
+}
+
+// 権限の解放
+void DGS::CriticalSection::leave()
+{
+	::LeaveCriticalSection(&cs_);
 }

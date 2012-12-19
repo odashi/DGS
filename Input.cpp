@@ -287,7 +287,7 @@ std::list<GUID> DGS::Joypad::s_guids_;
 // ジョイパッドの列挙
 BOOL CALLBACK DGS::Joypad::joypadEnum(const DIDEVICEINSTANCE* ddi, void* ref)
 {
-	Joypad* joypad = reinterpret_cast<Joypad*>(ref);
+	Joypad* joypad = static_cast<Joypad*>(ref);
 		
 	// 同じジョイパッドのインスタンスは生成しない
 	for (auto it = s_guids_.begin(); it != s_guids_.end(); ++it) {
@@ -315,7 +315,7 @@ BOOL CALLBACK DGS::Joypad::joypadEnum(const DIDEVICEINSTANCE* ddi, void* ref)
 bool DGS::Joypad::getDevice()
 {
 	// デバイスを列挙して取得
-	s_di_->EnumDevices(DI8DEVCLASS_GAMECTRL, joypadEnum, reinterpret_cast<void *>(this), DIEDFL_ATTACHEDONLY);
+	s_di_->EnumDevices(DI8DEVCLASS_GAMECTRL, joypadEnum, static_cast<void *>(this), DIEDFL_ATTACHEDONLY);
 	if (!dev_.p)
 		return false;
 

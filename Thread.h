@@ -37,4 +37,18 @@ namespace DGS {
 		// スレッドの戻り値を取得
 		unsigned int exitCode();
 	};
+
+	// クリティカルセクション
+	class CriticalSection : private Uncopyable {
+		::CRITICAL_SECTION cs_;
+	public:
+		CriticalSection();
+		~CriticalSection();
+
+		// 権限の取得
+		void enter();
+
+		// 権限の解放
+		void leave();
+	};
 }
