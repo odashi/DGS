@@ -89,18 +89,14 @@ bool DGS::Mouse::released(const std::string& key) const
 
 unsigned int DGS::Keyboard::lookup(const std::string& key) const
 {
-	// 全て大文字にする
-	std::string k = key;
-	std::transform(k.begin(), k.end(), k.begin(), std::toupper);
-
-	char k0 = k[0];
+	char k0 = key[0];
 
 	// 文字列長が1で[0-9A-Z]である場合はその文字コードを直接返す
-	if (k.size() == 1 && (('0' <= k0 && k0 <= '9') || ('A' <= k0 && k0 <= 'Z')))
+	if (key.size() == 1 && (('0' <= k0 && k0 <= '9') || ('A' <= k0 && k0 <= 'Z')))
 		return k0;
 
 	// それ以外の場合はテーブルを参照する
-	auto it = table_.find(k);
+	auto it = table_.find(key);
 	if (it != table_.end())
 		return it->second;
 
@@ -273,6 +269,9 @@ bool DGS::Keyboard::released(const std::string& key) const
 namespace {
 	// ボタンの最大数
 	unsigned int BUTTON_NUM_MAX = 64;
+
+	// スレッドの待機時間
+	unsigned int SLEEP_TIME = 500;
 }
 
 // DirectInput オブジェクト
@@ -298,7 +297,7 @@ unsigned int DGS::Joypad::joypadThread(void* data)
 		}
 
 		// 待機
-		Thread::sleep(1000);
+		Thread::sleep(SLEEP_TIME);
 	}
 
 	return 0;
@@ -507,4 +506,184 @@ bool DGS::Joypad::released(const std::string& key) const
 	if (index >= BUTTON_NUM_MAX)
 		return false;
 	return (!(state_.rgbButtons[index] & 0x80) && !!(old_state_.rgbButtons[index] & 0x80));
+}
+
+
+
+/* class DGS::InputBinder::BindInfo */
+
+// c-tor
+DGS::InputBinder::BindInfo::BindInfo(const Input& input_, BindType type_, const std::string& src_key_)
+	: input(input_)
+	, type(type_)
+	, src_key(src_key_)
+{}
+
+// move c-tor
+DGS::InputBinder::BindInfo::BindInfo(BindInfo&& src)
+	: input(src.input)
+	, type(src.type)
+	, src_key(std::move(src.src_key))
+{
+	switch (type) {
+	case DGS_INPUT_BIND_BUTTON:
+	case DGS_INPUT_BIND_AXIS_TO_BUTTON:
+		threshold = src.threshold;
+		upper_is_down = src.upper_is_down;
+		down = src.down;
+		old_down = src.old_down;
+		break;
+	case DGS_INPUT_BIND_AXIS:
+	case DGS_INPUT_BIND_BUTTON_TO_AXIS:
+		up_val = src.up_val;
+		down_val = src.down_val;
+		axis = src.axis;
+		break;
+	}
+}
+
+// ボタンかどうか
+inline bool DGS::InputBinder::BindInfo::isButton() const { return !(type & 0x10); }
+
+// 軸かどうか
+inline bool DGS::InputBinder::BindInfo::isAxis() const { return !!(type & 0x10); }
+
+
+/* class DGS::InputBinder */
+
+// 指定された名前でバインドされている場合は例外を返す
+void DGS::InputBinder::assertNotBinded(const std::string& key) const
+{
+	if (isBinded(key))
+		throw Exception("指定されたキーで既に他の要素がバインドされています。");
+}
+
+void DGS::InputBinder::update()
+{
+	// 各値の更新
+	for (auto it = table_.begin(); it != table_.end(); ++it) {
+		BindInfo& info = it->second;
+		switch (info.type) {
+		case DGS_INPUT_BIND_BUTTON:
+			info.old_down = info.down;
+			info.down = info.input.down(info.src_key);
+			break;
+		case DGS_INPUT_BIND_AXIS_TO_BUTTON:
+			info.old_down = info.down;
+			if (info.upper_is_down)
+				info.down = (info.input.axis(info.src_key) >= info.threshold);
+			else
+				info.down = (info.input.axis(info.src_key) <= info.threshold);
+			break;
+		case DGS_INPUT_BIND_AXIS:
+			info.axis = info.input.axis(info.src_key);
+			break;
+		case DGS_INPUT_BIND_BUTTON_TO_AXIS:
+			info.axis = info.input.down(info.src_key) ? info.down_val : info.up_val;
+			break;
+		}
+	}
+}
+
+long DGS::InputBinder::axis(const std::string& key) const
+{
+	auto it = table_.find(key);
+	if (it != table_.end() && it->second.isAxis())
+		return it->second.axis;
+	return 0L;
+}
+
+bool DGS::InputBinder::up(const std::string& key) const
+{
+	auto it = table_.find(key);
+	if (it != table_.end() && it->second.isButton())
+		return !it->second.down;
+	return false;
+}
+
+bool DGS::InputBinder::down(const std::string& key) const
+{
+	auto it = table_.find(key);
+	if (it != table_.end() && it->second.isButton())
+		return it->second.down;
+	return false;
+}
+
+bool DGS::InputBinder::pressed(const std::string& key) const
+{
+	auto it = table_.find(key);
+	if (it != table_.end() && it->second.isButton())
+		return (it->second.down && !it->second.old_down);
+	return false;
+}
+
+bool DGS::InputBinder::released(const std::string& key) const
+{
+	auto it = table_.find(key);
+	if (it != table_.end() && it->second.isButton())
+		return (!it->second.down && it->second.old_down);
+	return false;
+}
+
+// 指定された名前でバインドされているものがあるかどうか
+bool DGS::InputBinder::isBinded(const std::string& key) const
+{
+	auto it = table_.find(key);
+	return (it != table_.end());
+}
+
+// バインドの追加 (ボタン -> ボタン)
+void DGS::InputBinder::bindButton(const std::string& key, const Input& input, const std::string src_key)
+{
+	assertNotBinded(key);
+
+	typedef std::map<std::string, BindInfo>::value_type NODE;
+
+	// 登録
+	BindInfo info(input, DGS_INPUT_BIND_BUTTON, src_key);
+	info.down = info.old_down = false;
+	table_.insert(NODE(key, info));
+}
+
+// バインドの追加 (軸 -> 軸)
+void DGS::InputBinder::bindAxis(const std::string& key, const Input& input, const std::string src_key)
+{
+	assertNotBinded(key);
+
+	typedef std::map<std::string, BindInfo>::value_type NODE;
+
+	// 登録
+	BindInfo info(input, DGS_INPUT_BIND_AXIS, src_key);
+	info.axis = 0L;
+	table_.insert(NODE(key, info));
+}
+
+// バインドの追加 (軸 -> ボタン)
+void DGS::InputBinder::bindAxisToButton(const std::string& key, const Input& input, const std::string src_key, long threshold, bool upper_is_down)
+{
+	assertNotBinded(key);
+
+	typedef std::map<std::string, BindInfo>::value_type NODE;
+
+	// 登録
+	BindInfo info(input, DGS_INPUT_BIND_AXIS_TO_BUTTON, src_key);
+	info.threshold = threshold;
+	info.upper_is_down = upper_is_down;
+	info.down = info.old_down = false;
+	table_.insert(NODE(key, info));
+}
+
+// バインドの追加 (ボタン -> 軸)
+void DGS::InputBinder::bindButtonToAxis(const std::string& key, const Input& input, const std::string src_key, long up_val, long down_val)
+{
+	assertNotBinded(key);
+
+	typedef std::map<std::string, BindInfo>::value_type NODE;
+
+	// 登録
+	BindInfo info(input, DGS_INPUT_BIND_BUTTON_TO_AXIS, src_key);
+	info.up_val = up_val;
+	info.down_val = down_val;
+	info.axis = up_val;
+	table_.insert(NODE(key, info));
 }

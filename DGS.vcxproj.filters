@@ -82,9 +82,6 @@
     <ClInclude Include="Timer.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="InputBinder.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="Input.h">
       <Filter>Headers</Filter>
     </ClInclude>

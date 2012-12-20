@@ -29,7 +29,6 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Hook.h" />
-    <ClInclude Include="InputBinder.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="Mutex.h" />
     <ClInclude Include="Shader.h" />

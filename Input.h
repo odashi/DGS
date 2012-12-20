@@ -118,4 +118,69 @@ namespace DGS {
 		bool pressed(const std::string& key) const;
 		bool released(const std::string& key) const;
 	};
+
+
+	// 入力系統の統合
+	class InputBinder : public Input {
+		// バインドの種類
+		enum BindType {
+			DGS_INPUT_BIND_BUTTON = 0x00,
+			DGS_INPUT_BIND_AXIS_TO_BUTTON = 0x01,
+			DGS_INPUT_BIND_AXIS = 0x10,
+			DGS_INPUT_BIND_BUTTON_TO_AXIS = 0x11,
+		};
+		// バインド情報
+		struct BindInfo {
+			const Input& input;
+			BindType type;
+			const std::string src_key;
+			union {
+				struct {
+					long up_val;
+					long down_val;
+					long axis;
+				};
+				struct {
+					long threshold;
+					bool upper_is_down;
+					bool down;
+					bool old_down;
+				};
+			};
+
+			BindInfo(const Input& input_, BindType type_, const std::string& src_key_);
+			BindInfo(BindInfo&& src);
+
+			// ボタンかどうか
+			bool isButton() const;
+
+			// 軸かどうか
+			bool isAxis() const;
+		};
+
+		std::map<std::string, BindInfo> table_;
+
+		// 指定した名前でバインドされている場合は例外を返す
+		void assertNotBinded(const std::string& key) const;
+
+	public:
+		InputBinder() {}
+		~InputBinder() {}
+
+		void update();
+		long axis(const std::string& key) const;
+		bool up(const std::string& key) const;
+		bool down(const std::string& key) const;
+		bool pressed(const std::string& key) const;
+		bool released(const std::string& key) const;
+
+		// 指定した名前でバインドされているものがあるかどうか
+		bool isBinded(const std::string& key) const;
+
+		// バインドの追加
+		void bindButton(const std::string& key, const Input& input, const std::string src_key);
+		void bindAxis(const std::string& key, const Input& input, const std::string src_key);
+		void bindAxisToButton(const std::string& key, const Input& input, const std::string src_key, long threshold, bool upper_is_down);
+		void bindButtonToAxis(const std::string& key, const Input& input, const std::string src_key, long up_val, long down_val);
+	};
 }
