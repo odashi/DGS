@@ -28,6 +28,11 @@ namespace DGS {
 		// 情報の更新
 		virtual void update() = 0;
 
+		// どのボタンが押されているか
+		// 複数のボタンが押されている場合は最初に見つかったものを返す
+		// 何も押されていない場合は空文字列を返す
+		virtual std::string activeButton() const = 0;
+
 		// 座標値の取得
 		virtual long axis(const std::string& key) const = 0;
 
@@ -54,19 +59,22 @@ namespace DGS {
 		Mouse(Window& window);
 		~Mouse() {}
 
-		virtual void update();
-		virtual long axis(const std::string& name) const;
-		virtual bool up(const std::string& key) const;
-		virtual bool down(const std::string& key) const;
-		virtual bool pressed(const std::string& key) const;
-		virtual bool released(const std::string& key) const;
+		void update();
+		std::string activeButton() const;
+		long axis(const std::string& name) const;
+		bool up(const std::string& key) const;
+		bool down(const std::string& key) const;
+		bool pressed(const std::string& key) const;
+		bool released(const std::string& key) const;
 	};
 
-	// キーボード入力の管理
+	// キーボードの管理
 	class Keyboard : public Input {
 		static const unsigned int BUFFER_SIZE = 256;
 
 		std::map<std::string, int> table_;
+		std::map<int, std::string> rev_table_;
+
 		unsigned char buf_[BUFFER_SIZE];
 		unsigned char oldbuf_[BUFFER_SIZE];
 
@@ -77,6 +85,7 @@ namespace DGS {
 		~Keyboard() {}
 
 		void update();
+		std::string activeButton() const;
 		long axis(const std::string& key) const;
 		bool up(const std::string& key) const;
 		bool down(const std::string& key) const;
@@ -112,6 +121,7 @@ namespace DGS {
 		~Joypad();
 
 		void update();
+		std::string activeButton() const;
 		long axis(const std::string& key) const;
 		bool up(const std::string& key) const;
 		bool down(const std::string& key) const;
@@ -158,6 +168,7 @@ namespace DGS {
 			bool isAxis() const;
 		};
 
+		// バインド情報のテーブル
 		std::map<std::string, BindInfo> table_;
 
 		// 指定した名前でバインドされている場合は例外を返す
@@ -168,6 +179,7 @@ namespace DGS {
 		~InputBinder() {}
 
 		void update();
+		std::string activeButton() const;
 		long axis(const std::string& key) const;
 		bool up(const std::string& key) const;
 		bool down(const std::string& key) const;
@@ -182,5 +194,9 @@ namespace DGS {
 		void bindAxis(const std::string& key, const Input& input, const std::string src_key);
 		void bindAxisToButton(const std::string& key, const Input& input, const std::string src_key, long threshold, bool upper_is_down);
 		void bindButtonToAxis(const std::string& key, const Input& input, const std::string src_key, long up_val, long down_val);
+
+		// バインドの削除
+		void clear();
+		void unbind(const std::string& key);
 	};
 }

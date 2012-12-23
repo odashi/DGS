@@ -42,6 +42,14 @@ void DGS::Mouse::update()
 	mb_ = window_.mouseDownM();
 }
 
+std::string DGS::Mouse::activeButton() const
+{
+	if (lb_) return "LEFT";
+	if (rb_) return "RIGHT";
+	if (mb_) return "MIDDLE";
+	return std::string();
+}
+
 long DGS::Mouse::axis(const std::string& key) const
 {
 	if (key == "X") return p_.x - old_p_.x;
@@ -108,16 +116,30 @@ DGS::Keyboard::Keyboard()
 {
 	// ルックアップテーブルのキーの型
 	typedef std::map<std::string, int>::value_type NODE;
+	typedef std::map<int, std::string>::value_type REV_NODE;
 
 	// バッファの初期化
 	std::fill(buf_, buf_ + BUFFER_SIZE, 0);
 	std::fill(oldbuf_, oldbuf_ + BUFFER_SIZE, 0);
 
 	// ルックアップテーブルの初期化
+	for (char c = '0'; c <= '9'; ++c) {
+		char cc[2] = { c, '\0' };
+		rev_table_.insert(REV_NODE(c, cc));
+	}
+	for (char c = 'A'; c <= 'Z'; ++c) {
+		char cc[2] = { c, '\0' };
+		rev_table_.insert(REV_NODE(c, cc));
+	}
+
 	table_.insert(NODE("UP", VK_UP));
 	table_.insert(NODE("DOWN", VK_DOWN));
 	table_.insert(NODE("LEFT", VK_LEFT));
 	table_.insert(NODE("RIGHT", VK_RIGHT));
+	rev_table_.insert(REV_NODE(VK_UP, "UP"));
+	rev_table_.insert(REV_NODE(VK_DOWN, "DOWN"));
+	rev_table_.insert(REV_NODE(VK_LEFT, "LEFT"));
+	rev_table_.insert(REV_NODE(VK_RIGHT, "RIGHT"));
 
 	table_.insert(NODE("SHIFT", VK_SHIFT));
 	table_.insert(NODE("LSHIFT", VK_LSHIFT));
@@ -128,7 +150,13 @@ DGS::Keyboard::Keyboard()
 	table_.insert(NODE("CTRL", VK_CONTROL));
 	table_.insert(NODE("LCTRL", VK_LCONTROL));
 	table_.insert(NODE("RCTRL", VK_RCONTROL));
+	table_.insert(NODE("MENU", VK_MENU));
 	table_.insert(NODE("ALT", VK_MENU));
+	rev_table_.insert(REV_NODE(VK_LSHIFT, "LSHIFT"));
+	rev_table_.insert(REV_NODE(VK_RSHIFT, "RSHIFT"));
+	rev_table_.insert(REV_NODE(VK_LCONTROL, "LCONTROL"));
+	rev_table_.insert(REV_NODE(VK_RCONTROL, "RCONTROL"));
+	rev_table_.insert(REV_NODE(VK_MENU, "MENU"));
 
 	table_.insert(NODE("ENTER", VK_RETURN));
 	table_.insert(NODE("RETURN", VK_RETURN));
@@ -143,6 +171,15 @@ DGS::Keyboard::Keyboard()
 	table_.insert(NODE("TAB", VK_TAB));
 	table_.insert(NODE("SPACE", VK_SPACE));
 	table_.insert(NODE(" ", VK_SPACE));
+	rev_table_.insert(REV_NODE(VK_RETURN, "RETURN"));
+	rev_table_.insert(REV_NODE(VK_ESCAPE, "ESCAPE"));
+	rev_table_.insert(REV_NODE(VK_INSERT, "INSERT"));
+	rev_table_.insert(REV_NODE(VK_DELETE, "DELETE"));
+	rev_table_.insert(REV_NODE(VK_HOME, "HOME"));
+	rev_table_.insert(REV_NODE(VK_END, "END"));
+	rev_table_.insert(REV_NODE(VK_BACK, "BACK"));
+	rev_table_.insert(REV_NODE(VK_TAB, "TAB"));
+	rev_table_.insert(REV_NODE(VK_SPACE, "SPACE"));
 
 	table_.insert(NODE("!", '1'));
 	table_.insert(NODE("\"", '2'));
@@ -177,6 +214,18 @@ DGS::Keyboard::Keyboard()
 	table_.insert(NODE("^", VK_OEM_7));
 	table_.insert(NODE("~", VK_OEM_7));
 	table_.insert(NODE("_", VK_OEM_102));
+	rev_table_.insert(REV_NODE(VK_OEM_1, ":"));
+	rev_table_.insert(REV_NODE(VK_OEM_PLUS, ";"));
+	rev_table_.insert(REV_NODE(VK_OEM_COMMA, ","));
+	rev_table_.insert(REV_NODE(VK_OEM_MINUS, "-"));
+	rev_table_.insert(REV_NODE(VK_OEM_PERIOD, "."));
+	rev_table_.insert(REV_NODE(VK_OEM_2, "/"));
+	rev_table_.insert(REV_NODE(VK_OEM_3, "@"));
+	rev_table_.insert(REV_NODE(VK_OEM_4, "["));
+	rev_table_.insert(REV_NODE(VK_OEM_5, "\\"));
+	rev_table_.insert(REV_NODE(VK_OEM_6, "]"));
+	rev_table_.insert(REV_NODE(VK_OEM_7, "^"));
+	rev_table_.insert(REV_NODE(VK_OEM_102, "_"));
 
 	table_.insert(NODE("NUM0", VK_NUMPAD0));
 	table_.insert(NODE("NUM1", VK_NUMPAD1));
@@ -194,6 +243,22 @@ DGS::Keyboard::Keyboard()
 	table_.insert(NODE("NUM-", VK_SUBTRACT));
 	table_.insert(NODE("NUM.", VK_DECIMAL));
 	table_.insert(NODE("NUM/", VK_DIVIDE));
+	rev_table_.insert(REV_NODE(VK_NUMPAD0, "NUM0"));
+	rev_table_.insert(REV_NODE(VK_NUMPAD1, "NUM1"));
+	rev_table_.insert(REV_NODE(VK_NUMPAD2, "NUM2"));
+	rev_table_.insert(REV_NODE(VK_NUMPAD3, "NUM3"));
+	rev_table_.insert(REV_NODE(VK_NUMPAD4, "NUM4"));
+	rev_table_.insert(REV_NODE(VK_NUMPAD5, "NUM5"));
+	rev_table_.insert(REV_NODE(VK_NUMPAD6, "NUM6"));
+	rev_table_.insert(REV_NODE(VK_NUMPAD7, "NUM7"));
+	rev_table_.insert(REV_NODE(VK_NUMPAD8, "NUM8"));
+	rev_table_.insert(REV_NODE(VK_NUMPAD9, "NUM9"));
+	rev_table_.insert(REV_NODE(VK_MULTIPLY, "NUM*"));
+	rev_table_.insert(REV_NODE(VK_ADD, "NUM+"));
+	rev_table_.insert(REV_NODE(VK_SEPARATOR, "NUM,"));
+	rev_table_.insert(REV_NODE(VK_SUBTRACT, "NUM-"));
+	rev_table_.insert(REV_NODE(VK_DECIMAL, "NUM."));
+	rev_table_.insert(REV_NODE(VK_DIVIDE, "NUM/"));
 
 	table_.insert(NODE("F1", VK_F1));
 	table_.insert(NODE("F2", VK_F2));
@@ -219,10 +284,30 @@ DGS::Keyboard::Keyboard()
 	table_.insert(NODE("F22", VK_F22));
 	table_.insert(NODE("F23", VK_F23));
 	table_.insert(NODE("F24", VK_F24));
-
-	table_.insert(NODE("LBUTTON", VK_LBUTTON));
-	table_.insert(NODE("RBUTTON", VK_RBUTTON));
-	table_.insert(NODE("MBUTTON", VK_MBUTTON));
+	rev_table_.insert(REV_NODE(VK_F1, "F1"));
+	rev_table_.insert(REV_NODE(VK_F2, "F2"));
+	rev_table_.insert(REV_NODE(VK_F3, "F3"));
+	rev_table_.insert(REV_NODE(VK_F4, "F4"));
+	rev_table_.insert(REV_NODE(VK_F5, "F5"));
+	rev_table_.insert(REV_NODE(VK_F6, "F6"));
+	rev_table_.insert(REV_NODE(VK_F7, "F7"));
+	rev_table_.insert(REV_NODE(VK_F8, "F8"));
+	rev_table_.insert(REV_NODE(VK_F9, "F9"));
+	rev_table_.insert(REV_NODE(VK_F10, "F10"));
+	rev_table_.insert(REV_NODE(VK_F11, "F11"));
+	rev_table_.insert(REV_NODE(VK_F12, "F12"));
+	rev_table_.insert(REV_NODE(VK_F13, "F13"));
+	rev_table_.insert(REV_NODE(VK_F14, "F14"));
+	rev_table_.insert(REV_NODE(VK_F15, "F15"));
+	rev_table_.insert(REV_NODE(VK_F16, "F16"));
+	rev_table_.insert(REV_NODE(VK_F17, "F17"));
+	rev_table_.insert(REV_NODE(VK_F18, "F18"));
+	rev_table_.insert(REV_NODE(VK_F19, "F19"));
+	rev_table_.insert(REV_NODE(VK_F20, "F20"));
+	rev_table_.insert(REV_NODE(VK_F21, "F21"));
+	rev_table_.insert(REV_NODE(VK_F22, "F22"));
+	rev_table_.insert(REV_NODE(VK_F23, "F23"));
+	rev_table_.insert(REV_NODE(VK_F24, "F24"));
 }
 
 void DGS::Keyboard::update()
@@ -232,6 +317,30 @@ void DGS::Keyboard::update()
 
 	// 新しい情報の取得
 	::GetKeyboardState(buf_);
+}
+
+std::string DGS::Keyboard::activeButton() const
+{
+	// 押されているキーの検索
+	int index = -1;
+	for (int i = 0; i < static_cast<int>(BUFFER_SIZE); ++i) {
+		// 複数キーが一致する可能性のあるものは除外
+		if (i == VK_SHIFT || i == VK_CONTROL)
+			continue;
+		if (buf_[i] & 0x80) {
+			index = i;
+			break;
+		}
+	}
+	if (index == -1)
+		return std::string();
+
+	// 該当する文字列の検索
+	auto it = rev_table_.find(index);
+	if (it == rev_table_.end())
+		return std::string();
+
+	return it->second;
 }
 
 long DGS::Keyboard::axis(const std::string& /*key*/) const
@@ -462,6 +571,25 @@ void DGS::Joypad::update()
 		std::memset(&state_, 0, sizeof(state_));
 }
 
+std::string DGS::Joypad::activeButton() const
+{
+	// 押されているボタンの検索
+	int index = -1;
+	for (int i = 0; i < static_cast<int>(BUTTON_NUM_MAX); ++i) {
+		if (state_.rgbButtons[i] & 0x80) {
+			index = i;
+			break;
+		}
+	}
+	if (index == -1)
+		return std::string();
+
+	// 文字列の生成
+	char s[4];
+	::sprintf(s, "%d", index);
+	return s;
+}
+
 long DGS::Joypad::axis(const std::string& key) const
 {
 	if (key == "X") return state_.lX;
@@ -549,6 +677,7 @@ inline bool DGS::InputBinder::BindInfo::isButton() const { return !(type & 0x10)
 inline bool DGS::InputBinder::BindInfo::isAxis() const { return !!(type & 0x10); }
 
 
+
 /* class DGS::InputBinder */
 
 // 指定された名前でバインドされている場合は例外を返す
@@ -583,6 +712,12 @@ void DGS::InputBinder::update()
 			break;
 		}
 	}
+}
+
+std::string DGS::InputBinder::activeButton() const
+{
+	// バインダーは何も返さない
+	return std::string();
 }
 
 long DGS::InputBinder::axis(const std::string& key) const
@@ -686,4 +821,22 @@ void DGS::InputBinder::bindButtonToAxis(const std::string& key, const Input& inp
 	info.down_val = down_val;
 	info.axis = up_val;
 	table_.insert(NODE(key, info));
+}
+
+// 全てのバインドを削除
+void DGS::InputBinder::clear()
+{
+	table_.clear();
+}
+
+// バインドの削除
+// 指定したキーのバインドを全て削除
+void DGS::InputBinder::unbind(const std::string& key)
+{
+	for (;;) {
+		auto it = table_.find(key);
+		if (it == table_.end())
+			break;
+		table_.erase(it);
+	}
 }
